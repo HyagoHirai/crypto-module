@@ -1,49 +1,66 @@
-#include <stdio.h>
-#include <string.h>
 
-int tamanhoTabela = 10;
+#include <linux/kernel.h>
+#include <linux/init.h>
+#include <linux/module.h>
+#include <linux/crypto.h>
+#include <linux/err.h>
+#include <linux/scatterlist.h>
+ 
+#define SHA1_LENGTH     20
+ 
+static int __init sha1_init(void)
+{
+    struct scatterlist sg;
+    struct crypto_hash *tfm;
+    struct hash_desc desc;
+    unsigned char output[SHA1_LENGTH];
+    unsigned char buf[10];
+    int i, j;
+ 
+    printk(KERN_INFO "sha1: %s\n", __FUNCTION__);
+ 
+    //memset(buf, 'A', 10);
+    memcpy(buf, "HyagoHirai", 10);
+    memset(output, 0x00, SHA1_LENGTH);
+ 
+    tfm = crypto_alloc_hash("sha1", 0, CRYPTO_ALG_ASYNC);
+    if (IS_ERR(tfm)) {
+    printk(KERN_ERR "daveti: tfm allocation failed\n");
+    return 0;
+    }
+ 
+    desc.tfm = tfm;
+    desc.flags = 0;
 
-/*Rotina que transforma uma string em um número
-que será usado depois na função hash
-*/
-int stringParaInt(char *string) {
-    int tamanho, primeira, segunda; //Inteiros que representam o tamanho,
-                                    //o código da primeira letra da string
-                                    //e o código da segunda letra.
-    tamanho =  strlen(string);      //Mede o tamanho da string
-    primeira = string[0];           //Obtém o código da primeira letra
-    segunda = string[1];            //Obtém o código da segunda letra
-    int resultado = (tamanho * primeira) + segunda; //Função de transformação
-    return resultado;  //Retorna número que representa a string
+    //crypto_hash_init(&desc);
+    //daveti: NOTE, crypto_hash_init is needed
+    //for every new hasing!
+
+    for (j = 0; j < 3; j++) {
+    crypto_hash_init(&desc);
+    sg_init_one(&sg, buf, 10);
+    crypto_hash_update(&desc, &sg, 10);
+    crypto_hash_final(&desc, output);
+
+    for (i = 0; i < 20; i++) {
+        printk(KERN_ERR "%02x", output[i]);
+    }
+    printk(KERN_INFO "\n---------------\n");
+    memset(output, 0x00, SHA1_LENGTH);
     }
 
-/*A função mais simples de hash;
-Para uma tabela com n posições (n == tamanhoTabela)
-Toma-se o módulo n do valor inteiro gerado na
-função "stringParaInt"
-Retornará um número entre 0 e 19.
-*/
-int hash(int valor) {
-    return valor % tamanhoTabela;  
-    }
+    crypto_free_hash(tfm);
 
-
-/*Rotina principal
-Captura strings quaisquer e gera a chave correspondente para tabela hash.
-*/
-int main() {
-    int i;
-    char dado[50];
-
-    printf("\nDefina o tamanho da tabela: ");
-    scanf("%d", &tamanhoTabela);
-
-    for (i=0; i<tamanhoTabela; i++) {
-   
-    printf("\nDigite uma palavra qualquer: ");
-    gets(dado);
-
-    printf("A chave para a tabela (de 0 a %d) é: %d", tamanhoTabela-1, hash(stringParaInt(dado)));
-    }
-
+    return 0;
 }
+
+static void __exit sha1_exit(void)
+{
+    printk(KERN_INFO "sha1: %s\n", __FUNCTION__);
+}
+
+module_init(sha1_init);
+module_exit(sha1_exit);
+
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("daveti");
