@@ -12,3 +12,15 @@ salt complementa da hash
 echo "test" sha1' |sum		//gerar hash
 echo "test" | openssl sha1
 echo -n "test" | sha1sum	
+
+chmod 777 pasta
+
+//Para teste
+make ->ko , o
+rmmod ./hash.ko
+insmod ./hash.ko
+
+nano /var/logsyslog
+echo -n "string" |sha1sum
+
+
