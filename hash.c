@@ -16,7 +16,7 @@ void gerarhash(char *string,int tamString)
     struct crypto_hash *tfm;
     struct hash_desc desc;
     unsigned char output[SHA1_LENGTH];
-    unsigned char buf[10];
+    unsigned char buf[tamString];
     int i, j;
 	
 	
@@ -46,7 +46,7 @@ void gerarhash(char *string,int tamString)
     crypto_hash_update(&desc, &sg, tamString);
     crypto_hash_final(&desc, output);
 
-    for (i = 0; i < 20; i++) {
+    for (i = 0; i < SHA1_LENGTH; i++) {
         printk(KERN_ERR "%02x", output[i]);
     }
     printk(KERN_INFO "\n---------------\n");
