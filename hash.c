@@ -7,20 +7,24 @@
 #include <linux/scatterlist.h>
  
 #define SHA1_LENGTH     20
+
  
-static int __init sha1_init(void)
+void gerarhash(char *string,int tamString)
 {
+
     struct scatterlist sg;
     struct crypto_hash *tfm;
     struct hash_desc desc;
     unsigned char output[SHA1_LENGTH];
     unsigned char buf[10];
     int i, j;
+	
+	
  
     printk(KERN_INFO "sha1: %s\n", __FUNCTION__);
  
-    //memset(buf, 'A', 10);
-    memcpy(buf, "HyagoHirai", 10);
+    //memset(buf, 'A', tamString);
+    memcpy(buf, string, tamString);
     memset(output, 0x00, SHA1_LENGTH);
  
     tfm = crypto_alloc_hash("sha1", 0, CRYPTO_ALG_ASYNC);
@@ -36,10 +40,10 @@ static int __init sha1_init(void)
     //daveti: NOTE, crypto_hash_init is needed
     //for every new hasing!
 
-    for (j = 0; j < 3; j++) {
+    for (j = 0; j < 1; j++) {
     crypto_hash_init(&desc);
-    sg_init_one(&sg, buf, 10);
-    crypto_hash_update(&desc, &sg, 10);
+    sg_init_one(&sg, buf, tamString);
+    crypto_hash_update(&desc, &sg, tamString);
     crypto_hash_final(&desc, output);
 
     for (i = 0; i < 20; i++) {
@@ -54,6 +58,12 @@ static int __init sha1_init(void)
     return 0;
 }
 
+static int __init sha1_init(void)
+{
+	char *string = "Robson";
+	gerarhash(string,strlen(string));
+}
+
 static void __exit sha1_exit(void)
 {
     printk(KERN_INFO "sha1: %s\n", __FUNCTION__);
@@ -63,4 +73,4 @@ module_init(sha1_init);
 module_exit(sha1_exit);
 
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR("daveti");
+MODULE_AUTHOR("Robson");
