@@ -143,9 +143,24 @@ static ssize_t dev_read(struct file *filep, char *buffer, size_t len, loff_t *of
  *  @param offset The offset if required
  */
 static ssize_t dev_write(struct file *filep, const char *buffer, size_t len, loff_t *offset){
-    
-    sprintf(message, "%s(%zu letters)", buffer, len);   // appending received string with its length
+    char option = buffer[0];
+    sprintf(message, "%s", buffer);   // appending received string with its length
+    memmove(message, message+1, strlen(message)); // Remove command from string
     size_of_message = strlen(message);                 // store the length of the stored message
+    
+    printk(KERN_INFO "Crypto: Message -> %s\n", message);
+    switch (option) {
+        case 'c':
+            printk(KERN_INFO "Parte do Samuel\n");
+            break;
+        case 'd':
+            printk(KERN_INFO "Parte do Rubens\n");
+            break;
+        default:
+            printk(KERN_INFO "Parte dos Robson\n");
+            break;
+    }
+    
     printk(KERN_INFO "Crypto: Received %zu characters from the user\n", len);
     return len;
 }

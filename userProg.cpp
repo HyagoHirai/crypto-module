@@ -20,13 +20,13 @@ void writeMessage(int option) {
     
     switch (option) {
         case 1:
-            command = "c ";
+            command = "c";
             break;
         case 2:
-            command = "d ";
+            command = "d";
             break;
         default:
-            command = "h ";
+            command = "h";
             break;
     }
     
