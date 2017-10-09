@@ -9,7 +9,24 @@
 #define SHA1_LENGTH     20
 
  
-void gerarhash(char *string,int tamString)
+/*void concatenate_string(char *original, char *add, char *result)
+{
+    while(*original)
+    {
+       *result = *original;
+       original++;
+       result++;
+    }
+    while(*add)
+    {
+       *result = *add;
+       add++;
+       result++;
+    }
+    *result = '\0';
+}*/
+
+char gerarhash(char *string,int tamString)
 {
 
     struct scatterlist sg;
@@ -17,6 +34,9 @@ void gerarhash(char *string,int tamString)
     struct hash_desc desc;
     unsigned char output[SHA1_LENGTH];
     unsigned char buf[tamString];
+    unsigned char hash[SHA1_LENGTH];
+    char hashOut[SHA1_LENGTH];
+   
     int i, j;
 	
 	
@@ -47,11 +67,21 @@ void gerarhash(char *string,int tamString)
     crypto_hash_final(&desc, output);
 
     for (i = 0; i < SHA1_LENGTH; i++) {
-        printk(KERN_ERR "%02x", output[i]);
+
+	printk(KERN_ERR "%02x", output[i]);
+	sprintf(hash, "%02x", output[i]);
+	printk(KERN_INFO "HASH:%s\n",hash);
+	
+	
+	/*concatenate_string(hashOut,hash,hashOut);
+	printk(KERN_INFO "HASH:%s\n",hashOut);*/
+	
     }
     printk(KERN_INFO "\n---------------\n");
     memset(output, 0x00, SHA1_LENGTH);
     }
+
+
 
     crypto_free_hash(tfm);
 
@@ -59,9 +89,12 @@ void gerarhash(char *string,int tamString)
 }
 
 static int __init sha1_init(void)
-{
+{	
+
 	char *string = "Robson";
-	gerarhash(string,strlen(string));
+	char *result;
+	result = gerarhash(string,strlen(string));
+	//printk(KERN_INFO "HASH:%s\n",result);
 }
 
 static void __exit sha1_exit(void)
@@ -74,3 +107,4 @@ module_exit(sha1_exit);
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Robson");
+
