@@ -17,7 +17,8 @@
 
 #define  DEVICE_NAME "hyagoDev"   // The device will appear at /dev/hyagoDev using this value
 #define  CLASS_NAME  "crypto"     // The device class -- this is a character device driver
-#define HASH_LENGTH     20
+#define  HASH_LENGTH 20
+#define  CRYPTO_BUFFER_SIZE 32
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Hyago & Co.");
@@ -41,6 +42,8 @@ static ssize_t dev_write(struct file *, const char *, size_t, loff_t *);
 
 /// Prototype helper functions
 static char genHash(char *hashMessage, int sizeMessage);
+static void encrypt (u8 *pkey, char *msg);
+static void decrypt (u8 *pkey, char *msg);
 
 /**
  * Devices are represented as file structure in the kernel. The file_operations structure from
@@ -156,6 +159,9 @@ static ssize_t dev_read(struct file *filep, char *buffer, size_t len, loff_t *of
  */
 static ssize_t dev_write(struct file *filep, const char *buffer, size_t len, loff_t *offset){
     char option = buffer[0];
+    u8 *key[CRYPTO_BUFFER_SIZE];
+    
+    memcpy(key, cryptoKey, sizeof(cryptoKey));
     sprintf(message, "%s", buffer);   // appending received string with its length
     memmove(message, message+1, strlen(message)); // Remove command from string
     size_of_message = strlen(message);                 // store the length of the stored message
@@ -163,9 +169,11 @@ static ssize_t dev_write(struct file *filep, const char *buffer, size_t len, lof
     printk(KERN_INFO "Crypto: Message -> %s\n", message);
     switch (option) {
         case 'c':
+	    encrypt(key, message);
             printk(KERN_INFO "Parte do Samuel\n");
             break;
         case 'd':
+	    decrypt(key, message);
             printk(KERN_INFO "Parte do Rubens\n");
             break;
         default:
@@ -221,13 +229,68 @@ static char genHash(char *hashMessage, int sizeMessage) {
         sprintf(strOutput + strlen(strOutput), "%02x", output[i]);
     }
     
-    printk(KERN_INFO "HASH:%s\n",strOutput); // Print hash created
+    printk(KERN_INFO "HASH: %s\n",strOutput); // Print hash created
     sprintf(message, "%s", strOutput); // Change message text
     size_of_message = strlen(message); // Store the length of the stored message
     
     crypto_free_hash(tfm);
     
     return '0';
+}
+
+
+/* 
+Funcao de crypto
+*/
+static void encrypt (u8 *pkey, char *msg) {
+	struct crypto_cipher *tmf;
+        u8 dest[CRYPTO_BUFFER_SIZE];
+	u8 dest2[CRYPTO_BUFFER_SIZE];
+	char src[CRYPTO_BUFFER_SIZE];
+	int i = 0;
+
+	sprintf(src, "%s", msg); // Change message text
+	tmf = crypto_alloc_cipher("aes", 4, 32);
+        crypto_cipher_setkey(tmf, pkey, 32);
+
+        crypto_cipher_encrypt_one(tmf, dest, src);
+        crypto_cipher_encrypt_one(tmf, &dest[16], &src[16]);
+
+	printk(KERN_INFO "CRYPT: %s\n", dest); // Print hash created
+    	sprintf(message, "%s", dest); // Change message text
+    	size_of_message = strlen(message); // Store the length of the stored message
+	
+	crypto_cipher_decrypt_one(tmf, dest2, dest);
+        crypto_cipher_decrypt_one(tmf, &dest2[16], &dest[16]);
+
+	for(i = 0; i < sizeof(dest2); i++) {
+		pr_info("%c", dest2[i]);
+	}
+
+	crypto_free_cipher(tmf);
+}
+
+/*
+Função de decrypto
+*/
+static void decrypt (u8 *pkey, char *buffer){
+	struct crypto_cipher *tmf;
+        u8 dest[CRYPTO_BUFFER_SIZE];
+        u8 dest2[CRYPTO_BUFFER_SIZE];
+
+	memcpy(dest, buffer, sizeof(buffer));
+
+	tmf = crypto_alloc_cipher("aes", 4, 32);
+        crypto_cipher_setkey(tmf, pkey, 32);
+
+        crypto_cipher_decrypt_one(tmf, dest2, dest);
+        crypto_cipher_decrypt_one(tmf, &dest2[16], &dest[16]);
+
+	crypto_free_cipher(tmf);
+
+	printk(KERN_INFO "DECRYPT: %s\n", dest2); // Print hash created
+    	sprintf(message, "%s", dest); // Change message text
+    	size_of_message = strlen(message); // Store the length of the stored message
 }
 
 /** @brief A module must use the module_init() module_exit() macros from linux/init.h, which
