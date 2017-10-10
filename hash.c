@@ -5,11 +5,10 @@
 #include <linux/crypto.h>
 #include <linux/err.h>
 #include <linux/scatterlist.h>
- 
 #define SHA1_LENGTH     20
 
 
-char gerarhash(char *string,int tamString)
+char* gerarhash(char *string,int tamString)
 {
 
     struct scatterlist sg;
@@ -17,31 +16,23 @@ char gerarhash(char *string,int tamString)
     struct hash_desc desc;
     unsigned char output[SHA1_LENGTH];
     unsigned char buf[tamString];
-    unsigned char hash[SHA1_LENGTH];
-    char hashOut[SHA1_LENGTH];
-   
+    char hash[SHA1_LENGTH];
+    char hashOut[2000];
     int i, j;
 	
-	
- 
-    printk(KERN_INFO "sha1: %s\n", __FUNCTION__);
- 
+   
     //memset(buf, 'A', tamString);
     memcpy(buf, string, tamString);
     memset(output, 0x00, SHA1_LENGTH);
  
     tfm = crypto_alloc_hash("sha1", 0, CRYPTO_ALG_ASYNC);
     if (IS_ERR(tfm)) {
-    printk(KERN_ERR "daveti: tfm allocation failed\n");
+    printk(KERN_ERR "tfm allocation failed\n");
     return 0;
     }
  
     desc.tfm = tfm;
     desc.flags = 0;
-
-    //crypto_hash_init(&desc);
-    //daveti: NOTE, crypto_hash_init is needed
-    //for every new hasing!
 
     for (j = 0; j < 1; j++) {
     crypto_hash_init(&desc);
@@ -51,33 +42,25 @@ char gerarhash(char *string,int tamString)
 
     for (i = 0; i < SHA1_LENGTH; i++) {
 
-	printk(KERN_ERR "%02x", output[i]);
 	sprintf(hash, "%02x", output[i]);
-	printk(KERN_INFO "HASH:%s\n",hash);
-	
-	
-	/*concatenate_string(hashOut,hash,hashOut);
-	printk(KERN_INFO "HASH:%s\n",hashOut);*/
+	strcat(hashOut,hash);
+	//printk(KERN_ERR "%02x", output[i]);
+	//printk(KERN_INFO "HASH:%s\n",hash);
 	
     }
-    printk(KERN_INFO "\n---------------\n");
-    memset(output, 0x00, SHA1_LENGTH);
-    }
-
-
-
+   }
     crypto_free_hash(tfm);
 
-    return 0;
+    return hashOut;
 }
 
 static int __init sha1_init(void)
 {	
 
-	char *string = "Robson";
+	char *string = "Sistema Operacional";
 	char *result;
 	result = gerarhash(string,strlen(string));
-	//printk(KERN_INFO "HASH:%s\n",result);
+	printk(KERN_INFO "HASH:%s\n",result);
 }
 
 static void __exit sha1_exit(void)
@@ -90,4 +73,3 @@ module_exit(sha1_exit);
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Robson");
-
