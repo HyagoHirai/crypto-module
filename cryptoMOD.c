@@ -1,3 +1,4 @@
+// Base headers
 #include <linux/init.h>           // Mark up functions e.g. __init __exit
 #include <linux/module.h>         // Core header for loading LKMs into the kernel
 #include <linux/device.h>         // Header to support the kernel Driver Model
@@ -7,8 +8,16 @@
 #include <linux/mutex.h>          // Required for the mutex functionality
 #include <linux/stat.h>           // Contains flags for mudule params
 
+// Hash headers
+#include <linux/crypto.h>
+#include <linux/err.h>
+#include <linux/scatterlist.h>
+#include <linux/string.h>
+
+
 #define  DEVICE_NAME "hyagoDev"   // The device will appear at /dev/hyagoDev using this value
 #define  CLASS_NAME  "crypto"     // The device class -- this is a character device driver
+#define HASH_LENGTH     20
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Hyago & Co.");
@@ -29,6 +38,9 @@ static int     dev_open(struct inode *, struct file *);
 static int     dev_release(struct inode *, struct file *);
 static ssize_t dev_read(struct file *, char *, size_t, loff_t *);
 static ssize_t dev_write(struct file *, const char *, size_t, loff_t *);
+
+/// Prototype helper functions
+static char genHash(char *hashMessage, int sizeMessage);
 
 /**
  * Devices are represented as file structure in the kernel. The file_operations structure from
@@ -157,7 +169,7 @@ static ssize_t dev_write(struct file *filep, const char *buffer, size_t len, lof
             printk(KERN_INFO "Parte do Rubens\n");
             break;
         default:
-            printk(KERN_INFO "Parte dos Robson\n");
+            genHash(message, strlen(message));
             break;
     }
     
@@ -174,6 +186,48 @@ static int dev_release(struct inode *inodep, struct file *filep){
     mutex_unlock(&crypto_mutex);                      // release the mutex (i.e., lock goes up)
     printk(KERN_INFO "Crypto: Device successfully closed\n");
     return 0;
+}
+
+// Helper Functions
+static char genHash(char *hashMessage, int sizeMessage) {
+    struct scatterlist sg;
+    struct crypto_hash *tfm;
+    struct hash_desc desc;
+    unsigned char output[HASH_LENGTH];
+    unsigned char buf[sizeMessage];
+    
+    memcpy(buf, hashMessage, sizeMessage); // Copy message to a buffer
+    memset(output, 0x00, HASH_LENGTH); // fill output with 0
+    
+    tfm = crypto_alloc_hash("sha1", 0, CRYPTO_ALG_ASYNC);
+    if (IS_ERR(tfm)) {
+        printk(KERN_ERR "Crypto: tfm allocation failed\n");
+        return '0';
+    }
+    
+    desc.tfm = tfm;
+    desc.flags = 0;
+    
+    crypto_hash_init(&desc);
+    sg_init_one(&sg, buf, sizeMessage);
+    crypto_hash_update(&desc, &sg, sizeMessage);
+    crypto_hash_final(&desc, output);
+    
+    int i;
+    unsigned char strOutput[(HASH_LENGTH*2) + 1];
+    
+    sprintf(strOutput, "%02x", output[i]);
+    for (i = 1; i < HASH_LENGTH; i++) {
+        sprintf(strOutput + strlen(strOutput), "%02x", output[i]);
+    }
+    
+    printk(KERN_INFO "HASH:%s\n",strOutput); // Print hash created
+    sprintf(message, "%s", strOutput); // Change message text
+    size_of_message = strlen(message); // Store the length of the stored message
+    
+    crypto_free_hash(tfm);
+    
+    return '0';
 }
 
 /** @brief A module must use the module_init() module_exit() macros from linux/init.h, which

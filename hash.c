@@ -8,23 +8,6 @@
  
 #define SHA1_LENGTH     20
 
- 
-/*void concatenate_string(char *original, char *add, char *result)
-{
-    while(*original)
-    {
-       *result = *original;
-       original++;
-       result++;
-    }
-    while(*add)
-    {
-       *result = *add;
-       add++;
-       result++;
-    }
-    *result = '\0';
-}*/
 
 char gerarhash(char *string,int tamString)
 {
